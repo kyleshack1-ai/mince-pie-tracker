@@ -204,7 +204,7 @@ with tab2:
     st.markdown("### 🏆 Official Family Standings")
     
     if df.empty:
-        st.info("No pies rated yet. Get eating!)
+        st.info("No pies rated yet. Get eating!")
     else:
         reviewer_stats = df.groupby("Reviewer")["Overall_Score"].mean().reset_index()
         if not reviewer_stats.empty:
