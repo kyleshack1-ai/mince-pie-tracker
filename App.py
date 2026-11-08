@@ -3,7 +3,7 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
 # --- PAGE SETUP ---
-st.set_page_config(page_title="The Family Mince Pie Rater", page_icon="🥧", layout="centered")
+st.set_page_config(page_title="The Shackleton Family Mince Pie Rater", page_icon="🥧", layout="centered")
 
 # --- CUSTOM CSS FOR MOBILE & UI POLISH ---
 st.markdown("""
