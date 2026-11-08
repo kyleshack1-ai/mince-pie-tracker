@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="The Family Mince Pie Rater", page_icon="🥧", layout="centered")
@@ -64,11 +65,10 @@ if 'buy_chk' not in st.session_state: st.session_state.buy_chk = False
 if 'reviewer' not in st.session_state: st.session_state.reviewer = ""
 
 # --- GOOGLE SHEETS DATA MANAGEMENT ---
-conn = st.connection("gsheets", type="GSheetsConnection")
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
     try:
-        # Read data from the Google Sheet (ttl=0 ensures it fetches live data instantly)
         df = conn.read(ttl=0)
         if df is None or df.empty or "Reviewer" not in df.columns:
             return pd.DataFrame(columns=[
@@ -88,7 +88,6 @@ def save_review(review_dict):
     df = load_data()
     new_df = pd.DataFrame([review_dict])
     updated_df = pd.concat([df, new_df], ignore_index=True)
-    # Write the updated dataframe straight back to the Google Sheet
     conn.update(data=updated_df)
 
 # --- EMOJI MAPPINGS ---
@@ -263,7 +262,7 @@ with tab2:
                     
                     st.markdown(f"#### {avatar} {rev['Reviewer']} <span style='font-size: 0.8em; color: #aaa; float: right;'>{buy_str}{rev_cost}</span>", unsafe_allow_html=True)
                     
-                    if pd.notna(rev['Notes']) and rev['Notes'].스트rip():
+                    if pd.notna(rev['Notes']) and rev['Notes'].strip():
                         st.markdown(f"<blockquote style='background: #0b1c16; padding: 8px 12px; border-left: 3px solid #d4af37; border-radius: 4px; color: #ddd;'>\"{rev['Notes']}\"</blockquote>", unsafe_allow_html=True)
                     
                     m1, m2, m3, m4, m5 = st.columns(5)
