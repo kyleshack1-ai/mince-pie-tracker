@@ -8,17 +8,10 @@ st.set_page_config(page_title="Mince Pie Rater", page_icon="🥧", layout="cente
 # --- CUSTOM CSS ---
 st.markdown("""
     <style>
-    /* Hide Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    
-    /* Sleek container styling */
-    .stApp {
-        background-color: #121212;
-    }
-    
-    /* Style the main button */
+    .stApp { background-color: #121212; }
     .stButton>button {
         background-color: #d4af37 !important;
         color: #000 !important;
@@ -28,15 +21,8 @@ st.markdown("""
         width: 100% !important;
         border: none !important;
     }
-    .stButton>button:hover {
-        background-color: #f3c736 !important;
-    }
-    
-    /* Adjust spacing */
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 5rem;
-    }
+    .stButton>button:hover { background-color: #f3c736 !important; }
+    .block-container { padding-top: 2rem; padding-bottom: 5rem; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -82,26 +68,39 @@ st.title("🥧 The Mince Pie Rater")
 
 tab1, tab2 = st.tabs(["📝 Rate a Pie", "🏆 Leaderboard"])
 
-# --- TAB 1: RATING UI (REACTIVE) ---
+# --- TAB 1: RATING UI ---
 with tab1:
     df = load_data()
     
     st.session_state.reviewer = st.text_input("Reviewer Name", value=st.session_state.reviewer, placeholder="e.g. Kyle")
     
-    # Smart Dropdown
-    seed_pies = ["Aldi Specially Selected", "Asda Extra Special", "Co-op Irresistible", "M&S Collection", "Mr Kipling", "Tesco Finest"]
-    if not df.empty:
-        saved_pies = df["Pie_Name"].unique().tolist()
-        combined_list = sorted(list(set(seed_pies + saved_pies)))
-    else:
-        combined_list = sorted(seed_pies)
-        
-    combined_list.append("➕ Add a new pie...")
-
-    selected_pie = st.selectbox("Pie Brand / Name", combined_list)
+    # --- SMART AUTO-SYNCING PIE LIST ---
+    # Standard baseline pies to always include
+    default_pies = [
+        "Aldi Specially Selected", 
+        "Asda Extra Special", 
+        "Co-op Irresistible", 
+        "M&S Collection", 
+        "Mr Kipling", 
+        "Tesco Finest",
+        "Waitrose No.1"
+    ]
     
-    if selected_pie == "➕ Add a new pie...":
-        pie_name = st.text_input("Type the new pie name:")
+    # Extract any unique pie names already submitted by anyone in the family CSV
+    if not df.empty and "Pie_Name" in df.columns:
+        submitted_pies = df["Pie_Name"].dropna().unique().tolist()
+    else:
+        submitted_pies = []
+        
+    # Combine defaults and previously submitted names, sort them alphabetically, and remove duplicates
+    master_pie_list = sorted(list(set(default_pies + submitted_pies)))
+    master_pie_list.insert(0, "✨ Type a new pie name...") # Add a clear prompt at the top
+
+    selected_pie = st.selectbox("Pie Brand / Name", master_pie_list)
+    
+    # If they choose the top prompt, open a custom text box so they can add a pristine name
+    if selected_pie == "✨ Type a new pie name...":
+        pie_name = st.text_input("Enter exact pie name (e.g., Co-op Irresistible):", placeholder="Keep naming consistent!")
     else:
         pie_name = selected_pie
         
@@ -109,40 +108,31 @@ with tab1:
     
     st.markdown("---")
     
-    # Dynamic Sliders with Side-by-Side Emojis
+    # Sliders
     c1, c2 = st.columns([4, 1])
-    with c1:
-        st.slider("Price / Value", 0.0, 5.0, step=0.5, key="p_score")
-    with c2:
-        st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.p_score)}</div>", unsafe_allow_html=True)
+    with c1: st.slider("Price / Value", 0.0, 5.0, step=0.5, key="p_score")
+    with c2: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.p_score)}</div>", unsafe_allow_html=True)
 
     c3, c4 = st.columns([4, 1])
-    with c3:
-        st.slider("Filling Quality & Amount", 0.0, 5.0, step=0.5, key="f_score")
-    with c4:
-        st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.f_score)}</div>", unsafe_allow_html=True)
+    with c3: st.slider("Filling Quality & Amount", 0.0, 5.0, step=0.5, key="f_score")
+    with c4: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.f_score)}</div>", unsafe_allow_html=True)
 
     c5, c6 = st.columns([4, 1])
-    with c5:
-        st.slider("Crust / Pastry Texture", 0.0, 5.0, step=0.5, key="c_score")
-    with c6:
-        st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.c_score)}</div>", unsafe_allow_html=True)
+    with c5: st.slider("Crust / Pastry Texture", 0.0, 5.0, step=0.5, key="c_score")
+    with c6: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.c_score)}</div>", unsafe_allow_html=True)
 
     c7, c8 = st.columns([4, 1])
-    with c7:
-        st.slider("Booziness Factor", 0.0, 5.0, step=0.5, key="b_score")
-    with c8:
-        st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.b_score)}</div>", unsafe_allow_html=True)
+    with c7: st.slider("Booziness Factor", 0.0, 5.0, step=0.5, key="b_score")
+    with c8: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.b_score)}</div>", unsafe_allow_html=True)
     
     st.markdown("---")
     
     st.checkbox("✅ Would you buy this again?", key="buy_chk")
     st.text_area("Tasting Notes", placeholder="Pastry fell apart, filling was great...", key="notes_txt")
     
-    # Submission Logic
     if st.button("Lock in Score 🎅🏼"):
-        if not st.session_state.reviewer or not pie_name:
-            st.error("Please enter both your name and the pie name!")
+        if not st.session_state.reviewer or not pie_name or pie_name == "✨ Type a new pie name...":
+            st.error("Please enter your name and a valid pie name!")
         else:
             overall = (st.session_state.p_score + st.session_state.f_score + st.session_state.c_score + st.session_state.b_score) / 4
             
@@ -160,7 +150,7 @@ with tab1:
             }
             save_review(new_review)
             
-            # Reset form fields
+            # Reset sliders
             st.session_state.p_score = 2.5
             st.session_state.f_score = 2.5
             st.session_state.c_score = 2.5
