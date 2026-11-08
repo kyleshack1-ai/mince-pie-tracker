@@ -22,7 +22,6 @@ st.markdown("""
         color: #fff;
     }
     
-    /* Fix mobile squishing by giving elements breathing room */
     div.stExpander, div[data-testid="stForm"] {
         background-color: #132e24 !important;
         border: 1px solid #1f4d3c !important;
@@ -49,7 +48,6 @@ st.markdown("""
         border: 1px solid #225743 !important;
     }
     
-    /* Better spacing for mobile columns */
     [data-testid="column"] {
         padding: 0px 5px !important;
     }
@@ -112,7 +110,7 @@ with tab1:
     df = load_data()
     
     st.markdown("### ✍️ Log Your Verdict")
-    st.session_state.reviewer = st.text_input("Your Name", value=st.session_state.reviewer, placeholder="e.g. Myles, Mum, Dad")
+    st.session_state.reviewer = st.text_input("Name", value=st.session_state.reviewer, placeholder="e.g. Myles, Mum, Dad")
     
     default_pies = [
         "Aldi Specially Selected", 
@@ -144,7 +142,6 @@ with tab1:
     st.markdown("---")
     st.markdown("### 🎚️ Category Breakdowns")
     
-    # Clean side-by-side layout for sliders and emojis
     c1, c2 = st.columns([5, 1])
     with c1: st.slider("Price / Value", 0.0, 5.0, step=0.5, key="p_score")
     with c2: st.markdown(f"<div style='font-size:2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.p_score)}</div>", unsafe_allow_html=True)
@@ -202,6 +199,31 @@ with tab2:
     if df.empty:
         st.info("No pies rated yet. Get the kettle on and log the first box!")
     else:
+        # --- CRITIC STATS (SCROOGE & SANTA) ---
+        reviewer_stats = df.groupby("Reviewer")["Overall_Score"].mean().reset_index()
+        if not reviewer_stats.empty:
+            scrooge = reviewer_stats.loc[reviewer_stats["Overall_Score"].idxmin()]
+            santa = reviewer_stats.loc[reviewer_stats["Overall_Score"].idxmax()]
+            
+            sc1, sc2 = st.columns(2)
+            with sc1:
+                st.markdown(f"""
+                    <div style='background: #132e24; border: 1px solid #1f4d3c; padding: 12px; border-radius: 10px; text-align: center;'>
+                        <span style='font-size: 0.8em; color: #8fa89b;'>🫪 THE SCROOGE</span><br>
+                        <b>{get_avatar(scrooge['Reviewer'])} {scrooge['Reviewer']}</b><br>
+                        <span style='color: #d4af37; font-size: 0.9em;'>Avg Given: {scrooge['Overall_Score']:.1f}</span>
+                    </div>
+                """, unsafe_allow_html=True)
+            with sc2:
+                st.markdown(f"""
+                    <div style='background: #132e24; border: 1px solid #1f4d3c; padding: 12px; border-radius: 10px; text-align: center;'>
+                        <span style='font-size: 0.8em; color: #8fa89b;'>🎅🏼 THE SANTA</span><br>
+                        <b>{get_avatar(santa['Reviewer'])} {santa['Reviewer']}</b><br>
+                        <span style='color: #d4af37; font-size: 0.9em;'>Avg Given: {santa['Overall_Score']:.1f}</span>
+                    </div>
+                """, unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+
         pie_stats = df.groupby("Pie_Name").agg(
             Avg_Score=('Overall_Score', 'mean'),
             Review_Count=('Reviewer', 'count'),
