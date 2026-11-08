@@ -3,9 +3,9 @@ import pandas as pd
 import os
 
 # --- PAGE SETUP ---
-st.set_page_config(page_title="The Ultimate Mince Pie Rater", page_icon="🥧", layout="centered")
+st.set_page_config(page_title="The Family Mince Pie Rater", page_icon="🥧", layout="centered")
 
-# --- CUSTOM CSS FOR HIGH-END UI ---
+# --- CUSTOM CSS FOR MOBILE & UI POLISH ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -22,10 +22,12 @@ st.markdown("""
         color: #fff;
     }
     
+    /* Fix mobile squishing by giving elements breathing room */
     div.stExpander, div[data-testid="stForm"] {
         background-color: #132e24 !important;
         border: 1px solid #1f4d3c !important;
         border-radius: 14px !important;
+        padding: 10px;
         box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     }
     
@@ -38,10 +40,6 @@ st.markdown("""
         width: 100% !important;
         border: none !important;
         box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-        transition: transform 0.1s ease;
-    }
-    .stButton>button:hover {
-        transform: translateY(-1px);
     }
     
     input[type="text"], input[type="number"], textarea {
@@ -50,26 +48,10 @@ st.markdown("""
         border-radius: 8px !important;
         border: 1px solid #225743 !important;
     }
-    input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
-        border-color: #d4af37 !important;
-    }
     
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-        background-color: #0b1c16;
-        padding: 5px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background-color: #132e24;
-        border-radius: 8px;
-        color: #aaa;
-        font-weight: bold;
-        border: 1px solid #1f4d3c;
-        padding: 10px 20px;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #d4af37 !important;
-        color: #000 !important;
+    /* Better spacing for mobile columns */
+    [data-testid="column"] {
+        padding: 0px 5px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -112,21 +94,16 @@ def get_emoji(score):
     else: return "🎅🏼"
 
 def get_avatar(name):
-    if not isinstance(name, str):
-        return "👤"
+    if not isinstance(name, str): return "👤"
     n = name.strip().lower()
-    if any(k in n for k in ["myles", "kyle"]):
-        return "👨🏼‍🦰"
-    elif any(k in n for k in ["mum", "row"]):
-        return "👸🏼"
-    elif any(k in n for k in ["dad", "tony"]):
-        return "🤴🏻"
-    else:
-        return "👤"
+    if any(k in n for k in ["myles", "kyle"]): return "👨🏼‍🦰"
+    elif any(k in n for k in ["mum", "row"]): return "👸🏼"
+    elif any(k in n for k in ["dad", "tony"]): return "🤴🏻"
+    else: return "👤"
 
 # --- APP LAYOUT ---
 st.markdown("<h1 style='text-align: center; color: #d4af37;'>🎄 The Family Mince Pie Rater 🥧</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #8fa89b; margin-bottom: 30px;'>Settle the family Christmas debates once and for all.</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #8fa89b; margin-bottom: 25px;'>Settle the family Christmas debates once and for all.</p>", unsafe_allow_html=True)
 
 tab1, tab2 = st.tabs(["📝 Rate a Pie", "🏆 Leaderboard"])
 
@@ -135,7 +112,7 @@ with tab1:
     df = load_data()
     
     st.markdown("### ✍️ Log Your Verdict")
-    st.session_state.reviewer = st.text_input("Your Name", value=st.session_state.reviewer, placeholder="e.g. Kyle, Myles, Mum, Tony")
+    st.session_state.reviewer = st.text_input("Your Name", value=st.session_state.reviewer, placeholder="e.g. Myles, Mum, Dad")
     
     default_pies = [
         "Aldi Specially Selected", 
@@ -167,21 +144,22 @@ with tab1:
     st.markdown("---")
     st.markdown("### 🎚️ Category Breakdowns")
     
-    c1, c2 = st.columns([4, 1])
+    # Clean side-by-side layout for sliders and emojis
+    c1, c2 = st.columns([5, 1])
     with c1: st.slider("Price / Value", 0.0, 5.0, step=0.5, key="p_score")
-    with c2: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.2rem;'>{get_emoji(st.session_state.p_score)}</div>", unsafe_allow_html=True)
+    with c2: st.markdown(f"<div style='font-size:2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.p_score)}</div>", unsafe_allow_html=True)
 
-    c3, c4 = st.columns([4, 1])
+    c3, c4 = st.columns([5, 1])
     with c3: st.slider("Filling Quality & Amount", 0.0, 5.0, step=0.5, key="f_score")
-    with c4: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.2rem;'>{get_emoji(st.session_state.f_score)}</div>", unsafe_allow_html=True)
+    with c4: st.markdown(f"<div style='font-size:2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.f_score)}</div>", unsafe_allow_html=True)
 
-    c5, c6 = st.columns([4, 1])
+    c5, c6 = st.columns([5, 1])
     with c5: st.slider("Crust / Pastry Texture", 0.0, 5.0, step=0.5, key="c_score")
-    with c6: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.2rem;'>{get_emoji(st.session_state.c_score)}</div>", unsafe_allow_html=True)
+    with c6: st.markdown(f"<div style='font-size:2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.c_score)}</div>", unsafe_allow_html=True)
 
-    c7, c8 = st.columns([4, 1])
+    c7, c8 = st.columns([5, 1])
     with c7: st.slider("Booziness Factor", 0.0, 5.0, step=0.5, key="b_score")
-    with c8: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.2rem;'>{get_emoji(st.session_state.b_score)}</div>", unsafe_allow_html=True)
+    with c8: st.markdown(f"<div style='font-size:2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.b_score)}</div>", unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -228,7 +206,8 @@ with tab2:
             Avg_Score=('Overall_Score', 'mean'),
             Review_Count=('Reviewer', 'count'),
             Max_Score=('Overall_Score', 'max'),
-            Min_Score=('Overall_Score', 'min')
+            Min_Score=('Overall_Score', 'min'),
+            Avg_Cost=('Cost', 'mean')
         ).reset_index()
         
         pie_stats = pie_stats.sort_values(by="Avg_Score", ascending=False).reset_index(drop=True)
@@ -237,20 +216,23 @@ with tab2:
             pie = row['Pie_Name']
             avg = row['Avg_Score']
             count = row['Review_Count']
+            cost = row['Avg_Cost']
             
             is_volatile = count > 1 and (row['Max_Score'] - row['Min_Score']) >= 1.5
             medal = "🥇" if index == 0 else "🥈" if index == 1 else "🥉" if index == 2 else "🥧"
             feud_flag = " 🥊 **FAMILY FEUD**" if is_volatile else ""
             
-            with st.expander(f"{medal}  {pie}  —  **{avg:.1f} / 5.0** {get_emoji(avg)} {feud_flag}  ({count} review{'s' if count > 1 else ''})"):
+            cost_display = f" | 🏷️ £{cost:.2f}" if pd.notna(cost) and cost > 0 else ""
+            
+            with st.expander(f"{medal}  {pie}  —  **{avg:.1f} / 5.0** {get_emoji(avg)}{cost_display} {feud_flag}  ({count} review{'s' if count > 1 else ''})"):
                 pie_reviews = df[df['Pie_Name'] == pie]
                 
                 for _, rev in pie_reviews.iterrows():
                     avatar = get_avatar(rev['Reviewer'])
-                    cost_str = f" | £{rev['Cost']:.2f} box" if pd.notna(rev['Cost']) and rev['Cost'] > 0 else ""
+                    rev_cost = f" | £{rev['Cost']:.2f} box" if pd.notna(rev['Cost']) and rev['Cost'] > 0 else ""
                     buy_str = "✅ Buy Again" if rev['Buy_Again'] else "❌ Do Not Buy"
                     
-                    st.markdown(f"#### {avatar} {rev['Reviewer']} <span style='font-size: 0.8em; color: #aaa; float: right;'>{buy_str}{cost_str}</span>", unsafe_allow_html=True)
+                    st.markdown(f"#### {avatar} {rev['Reviewer']} <span style='font-size: 0.8em; color: #aaa; float: right;'>{buy_str}{rev_cost}</span>", unsafe_allow_html=True)
                     
                     if pd.notna(rev['Notes']) and rev['Notes'].strip():
                         st.markdown(f"<blockquote style='background: #0b1c16; padding: 8px 12px; border-left: 3px solid #d4af37; border-radius: 4px; color: #ddd;'>\"{rev['Notes']}\"</blockquote>", unsafe_allow_html=True)
