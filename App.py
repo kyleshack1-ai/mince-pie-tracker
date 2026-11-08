@@ -74,8 +74,7 @@ with tab1:
     
     st.session_state.reviewer = st.text_input("Reviewer Name", value=st.session_state.reviewer, placeholder="e.g. Kyle")
     
-    # --- SMART AUTO-SYNCING PIE LIST ---
-    # Standard baseline pies to always include
+    # Smart Auto-Syncing Pie List
     default_pies = [
         "Aldi Specially Selected", 
         "Asda Extra Special", 
@@ -86,19 +85,16 @@ with tab1:
         "Waitrose No.1"
     ]
     
-    # Extract any unique pie names already submitted by anyone in the family CSV
     if not df.empty and "Pie_Name" in df.columns:
         submitted_pies = df["Pie_Name"].dropna().unique().tolist()
     else:
         submitted_pies = []
         
-    # Combine defaults and previously submitted names, sort them alphabetically, and remove duplicates
     master_pie_list = sorted(list(set(default_pies + submitted_pies)))
-    master_pie_list.insert(0, "✨ Type a new pie name...") # Add a clear prompt at the top
+    master_pie_list.insert(0, "✨ Type a new pie name...")
 
     selected_pie = st.selectbox("Pie Brand / Name", master_pie_list)
     
-    # If they choose the top prompt, open a custom text box so they can add a pristine name
     if selected_pie == "✨ Type a new pie name...":
         pie_name = st.text_input("Enter exact pie name (e.g., Co-op Irresistible):", placeholder="Keep naming consistent!")
     else:
@@ -150,14 +146,10 @@ with tab1:
             }
             save_review(new_review)
             
-            # Reset sliders
-            st.session_state.p_score = 2.5
-            st.session_state.f_score = 2.5
-            st.session_state.c_score = 2.5
-            st.session_state.b_score = 2.5
-            st.session_state.pie_cost = 0.0
-            st.session_state.notes_txt = ""
-            st.session_state.buy_chk = False
+            # Safely clear keys so widgets reset to defaults on rerun
+            for k in ['p_score', 'f_score', 'c_score', 'b_score', 'pie_cost', 'notes_txt', 'buy_chk']:
+                if k in st.session_state:
+                    del st.session_state[k]
             
             st.toast(f"Score locked! Overall: {overall:.1f} {get_emoji(overall)}", icon="🥧")
             st.rerun()
