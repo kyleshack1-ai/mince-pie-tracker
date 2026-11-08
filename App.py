@@ -5,46 +5,51 @@ import os
 # --- PAGE SETUP ---
 st.set_page_config(page_title="Mince Pie Rater", page_icon="🥧", layout="centered")
 
-# --- CUSTOM CSS FOR APP STYLING ---
+# --- CUSTOM CSS ---
 st.markdown("""
     <style>
-    /* Hide default Streamlit headers and footers */
+    /* Hide Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* Make the form look like a native app card */
-    div[data-testid="stForm"] {
-        background-color: #1e1e1e;
-        border-radius: 12px;
-        padding: 25px;
-        border: 1px solid #333;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    /* Sleek container styling */
+    .stApp {
+        background-color: #121212;
     }
     
-    /* Style the main submit button */
+    /* Style the main button */
     .stButton>button {
         background-color: #d4af37 !important;
         color: #000 !important;
         border-radius: 8px !important;
-        font-weight: 700 !important;
-        border: none !important;
-        padding: 10px 20px !important;
+        font-weight: bold !important;
+        padding: 12px !important;
         width: 100% !important;
-        transition: 0.2s;
+        border: none !important;
     }
     .stButton>button:hover {
         background-color: #f3c736 !important;
     }
     
-    /* Tweak text inputs */
-    input[type="text"], input[type="number"], textarea {
-        background-color: #2a2a2a !important;
-        color: #fff !important;
-        border-radius: 6px !important;
+    /* Adjust spacing */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 5rem;
     }
     </style>
 """, unsafe_allow_html=True)
+
+# --- STATE MANAGEMENT ---
+# This ensures sliders and text boxes reset after a review is submitted
+if 'p_score' not in st.session_state: st.session_state.p_score = 2.5
+if 'f_score' not in st.session_state: st.session_state.f_score = 2.5
+if 'c_score' not in st.session_state: st.session_state.c_score = 2.5
+if 'b_score' not in st.session_state: st.session_state.b_score = 2.5
+if 'pie_cost' not in st.session_state: st.session_state.pie_cost = 0.0
+if 'notes_txt' not in st.session_state: st.session_state.notes_txt = ""
+if 'buy_chk' not in st.session_state: st.session_state.buy_chk = False
+if 'reviewer' not in st.session_state: st.session_state.reviewer = ""
 
 # --- DATA MANAGEMENT ---
 DATA_FILE = "mince_pie_data.csv"
@@ -67,29 +72,26 @@ def save_review(review_dict):
 
 # --- DYNAMIC EMOJI LOGIC ---
 def get_emoji(score):
-    if score <= 1.5: return "🤢"
-    elif score <= 3.0: return "😐"
-    elif score <= 4.0: return "😋"
-    else: return "🤤"
+    if score <= 1.0: return "💩"  # Absolute Rubbish
+    elif score <= 2.0: return "🧱" # Stodgy / Hard
+    elif score <= 3.0: return "😐" # Average
+    elif score <= 4.0: return "😋" # Tasty
+    elif score <= 4.5: return "🦌" # Elite Reindeer Tier
+    else: return "🎅"              # God Tier Santa
 
 # --- APP LAYOUT ---
 st.title("🥧 The Mince Pie Rater")
 
-tab1, tab2 = st.tabs(["📝 Rate", "🏆 Leaderboard"])
+tab1, tab2 = st.tabs(["📝 Rate a Pie", "🏆 Leaderboard"])
 
-# --- TAB 1: RATING FORM ---
+# --- TAB 1: RATING UI (REACTIVE) ---
 with tab1:
     df = load_data()
     
-    # 1. Build the Autocomplete List
-    # Start with the seed list of heavy hitters
-    seed_pies = [
-        "Aldi Specially Selected", "Asda Extra Special", 
-        "Co-op Irresistible", "M&S Collection", 
-        "Mr Kipling", "Tesco Finest"
-    ]
+    st.session_state.reviewer = st.text_input("Reviewer Name", value=st.session_state.reviewer, placeholder="e.g. Kyle")
     
-    # Combine with any pies already saved in the CSV database
+    # 1. Smart Dropdown (Instantly reactive)
+    seed_pies = ["Aldi Specially Selected", "Asda Extra Special", "Co-op Irresistible", "M&S Collection", "Mr Kipling", "Tesco Finest"]
     if not df.empty:
         saved_pies = df["Pie_Name"].unique().tolist()
         combined_list = sorted(list(set(seed_pies + saved_pies)))
@@ -98,75 +100,88 @@ with tab1:
         
     combined_list.append("➕ Add a new pie...")
 
-    with st.form("rating_form", clear_on_submit=True):
-        st.subheader("Log a Review")
+    selected_pie = st.selectbox("Pie Brand / Name", combined_list)
+    
+    # Text box appears instantly if "Add a new pie" is selected
+    if selected_pie == "➕ Add a new pie...":
+        pie_name = st.text_input("Type the new pie name:")
+    else:
+        pie_name = selected_pie
         
-        reviewer = st.text_input("Reviewer Name", placeholder="e.g. Kyle")
-        
-        # 2. The Smart Dropdown
-        selected_pie = st.selectbox("Pie Brand / Name", combined_list)
-        
-        # If they select "Add a new pie", reveal a blank text box
-        if selected_pie == "➕ Add a new pie...":
-            pie_name = st.text_input("Type the new pie name")
+    st.number_input("Box Price (£) - Optional", min_value=0.0, step=0.10, format="%.2f", key="pie_cost")
+    
+    st.markdown("---")
+    
+    # 2. Dynamic Sliders with Side-by-Side Emojis
+    c1, c2 = st.columns([4, 1])
+    with c1:
+        st.slider("Price / Value", 0.0, 5.0, step=0.5, key="p_score")
+    with c2:
+        st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.p_score)}</div>", unsafe_allow_html=True)
+
+    c3, c4 = st.columns([4, 1])
+    with c3:
+        st.slider("Filling Quality & Amount", 0.0, 5.0, step=0.5, key="f_score")
+    with c4:
+        st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.f_score)}</div>", unsafe_allow_html=True)
+
+    c5, c6 = st.columns([4, 1])
+    with c5:
+        st.slider("Crust / Pastry Texture", 0.0, 5.0, step=0.5, key="c_score")
+    with c6:
+        st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.c_score)}</div>", unsafe_allow_html=True)
+
+    c7, c8 = st.columns([4, 1])
+    with c7:
+        st.slider("Booziness Factor", 0.0, 5.0, step=0.5, key="b_score")
+    with c8:
+        st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.5rem;'>{get_emoji(st.session_state.b_score)}</div>", unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    st.checkbox("✅ Would you buy this again?", key="buy_chk")
+    st.text_area("Tasting Notes", placeholder="Pastry fell apart, filling was great...", key="notes_txt")
+    
+    # 3. Submission Logic
+    if st.button("Lock in Score 🎅"):
+        if not st.session_state.reviewer or not pie_name:
+            st.error("Please enter both your name and the pie name!")
         else:
-            pie_name = selected_pie
+            overall = (st.session_state.p_score + st.session_state.f_score + st.session_state.c_score + st.session_state.b_score) / 4
             
-        cost = st.number_input("Box Price (£) - Optional", min_value=0.0, step=0.10, format="%.2f")
-        
-        st.markdown("---")
-        
-        # 3. Dynamic Emoji Sliders
-        # Streamlit updates these values as soon as you release the drag
-        price_score = st.slider("Price / Value", 0.0, 5.0, 2.5, 0.5)
-        st.caption(f"**Score:** {price_score} {get_emoji(price_score)}")
-        
-        filling_score = st.slider("Filling Quality & Amount", 0.0, 5.0, 2.5, 0.5)
-        st.caption(f"**Score:** {filling_score} {get_emoji(filling_score)}")
-        
-        crust_score = st.slider("Crust / Pastry Texture", 0.0, 5.0, 2.5, 0.5)
-        st.caption(f"**Score:** {crust_score} {get_emoji(crust_score)}")
-        
-        booze_score = st.slider("Booziness Factor", 0.0, 5.0, 2.5, 0.5)
-        st.caption(f"**Score:** {booze_score} {get_emoji(booze_score)}")
-        
-        st.markdown("---")
-        
-        buy_again = st.checkbox("✅ Would you buy this again?")
-        notes = st.text_area("Tasting Notes", placeholder="Pastry fell apart, filling was great...")
-        
-        submitted = st.form_submit_button("Lock in Score")
-        
-        if submitted:
-            if not reviewer or not pie_name:
-                st.error("Please enter both your name and the pie name!")
-            else:
-                overall = (price_score + filling_score + crust_score + booze_score) / 4
-                
-                new_review = {
-                    "Reviewer": reviewer.strip(),
-                    "Pie_Name": pie_name.strip(),
-                    "Cost": cost,
-                    "Price_Score": price_score,
-                    "Filling_Score": filling_score,
-                    "Crust_Score": crust_score,
-                    "Booze_Score": booze_score,
-                    "Overall_Score": round(overall, 2),
-                    "Buy_Again": buy_again,
-                    "Notes": notes
-                }
-                save_review(new_review)
-                st.success(f"Score locked! Overall: {overall:.1f} {get_emoji(overall)}")
-                st.rerun()
+            new_review = {
+                "Reviewer": st.session_state.reviewer.strip(),
+                "Pie_Name": pie_name.strip(),
+                "Cost": st.session_state.pie_cost,
+                "Price_Score": st.session_state.p_score,
+                "Filling_Score": st.session_state.f_score,
+                "Crust_Score": st.session_state.c_score,
+                "Booze_Score": st.session_state.b_score,
+                "Overall_Score": round(overall, 2),
+                "Buy_Again": st.session_state.buy_chk,
+                "Notes": st.session_state.notes_txt
+            }
+            save_review(new_review)
+            
+            # Reset the form fields back to default
+            st.session_state.p_score = 2.5
+            st.session_state.f_score = 2.5
+            st.session_state.c_score = 2.5
+            st.session_state.b_score = 2.5
+            st.session_state.pie_cost = 0.0
+            st.session_state.notes_txt = ""
+            st.session_state.buy_chk = False
+            
+            st.toast(f"Score locked! Overall: {overall:.1f} {get_emoji(overall)}", icon="🥧")
+            st.rerun()
 
 # --- TAB 2: LEADERBOARD ---
 with tab2:
     df = load_data()
     
     if df.empty:
-        st.info("No pies rated yet.")
+        st.info("No pies rated yet. Get the kettle on!")
     else:
-        # Calculate stats for the leaderboard
         pie_stats = df.groupby("Pie_Name").agg(
             Avg_Score=('Overall_Score', 'mean'),
             Review_Count=('Reviewer', 'count'),
@@ -181,7 +196,7 @@ with tab2:
             avg = row['Avg_Score']
             count = row['Review_Count']
             
-            # Volatility logic
+            # Volatility flag
             is_volatile = count > 1 and (row['Max_Score'] - row['Min_Score']) >= 1.5
             medal = "🥇" if index == 0 else "🥈" if index == 1 else "🥉" if index == 2 else "🥧"
             feud_flag = " ⚠️ **FAMILY FEUD**" if is_volatile else ""
