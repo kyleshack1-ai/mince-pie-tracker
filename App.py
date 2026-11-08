@@ -41,7 +41,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- STATE MANAGEMENT ---
-# This ensures sliders and text boxes reset after a review is submitted
 if 'p_score' not in st.session_state: st.session_state.p_score = 2.5
 if 'f_score' not in st.session_state: st.session_state.f_score = 2.5
 if 'c_score' not in st.session_state: st.session_state.c_score = 2.5
@@ -72,12 +71,11 @@ def save_review(review_dict):
 
 # --- DYNAMIC EMOJI LOGIC ---
 def get_emoji(score):
-    if score <= 1.0: return "💩"  # Absolute Rubbish
-    elif score <= 2.0: return "🧱" # Stodgy / Hard
-    elif score <= 3.0: return "😐" # Average
-    elif score <= 4.0: return "😋" # Tasty
-    elif score <= 4.5: return "🦌" # Elite Reindeer Tier
-    else: return "🎅"              # God Tier Santa
+    if score == 0.0: return "🤢"
+    elif score <= 1.5: return "🫪"
+    elif score <= 3.0: return "😐"
+    elif score <= 4.5: return "😃"
+    else: return "🎅🏼"
 
 # --- APP LAYOUT ---
 st.title("🥧 The Mince Pie Rater")
@@ -90,7 +88,7 @@ with tab1:
     
     st.session_state.reviewer = st.text_input("Reviewer Name", value=st.session_state.reviewer, placeholder="e.g. Kyle")
     
-    # 1. Smart Dropdown (Instantly reactive)
+    # Smart Dropdown (Instantly reactive)
     seed_pies = ["Aldi Specially Selected", "Asda Extra Special", "Co-op Irresistible", "M&S Collection", "Mr Kipling", "Tesco Finest"]
     if not df.empty:
         saved_pies = df["Pie_Name"].unique().tolist()
@@ -112,7 +110,7 @@ with tab1:
     
     st.markdown("---")
     
-    # 2. Dynamic Sliders with Side-by-Side Emojis
+    # Dynamic Sliders with Side-by-Side Emojis
     c1, c2 = st.columns([4, 1])
     with c1:
         st.slider("Price / Value", 0.0, 5.0, step=0.5, key="p_score")
@@ -142,8 +140,8 @@ with tab1:
     st.checkbox("✅ Would you buy this again?", key="buy_chk")
     st.text_area("Tasting Notes", placeholder="Pastry fell apart, filling was great...", key="notes_txt")
     
-    # 3. Submission Logic
-    if st.button("Lock in Score 🎅"):
+    # Submission Logic
+    if st.button("Lock in Score 🎅🏼"):
         if not st.session_state.reviewer or not pie_name:
             st.error("Please enter both your name and the pie name!")
         else:
@@ -154,70 +152,4 @@ with tab1:
                 "Pie_Name": pie_name.strip(),
                 "Cost": st.session_state.pie_cost,
                 "Price_Score": st.session_state.p_score,
-                "Filling_Score": st.session_state.f_score,
-                "Crust_Score": st.session_state.c_score,
-                "Booze_Score": st.session_state.b_score,
-                "Overall_Score": round(overall, 2),
-                "Buy_Again": st.session_state.buy_chk,
-                "Notes": st.session_state.notes_txt
-            }
-            save_review(new_review)
-            
-            # Reset the form fields back to default
-            st.session_state.p_score = 2.5
-            st.session_state.f_score = 2.5
-            st.session_state.c_score = 2.5
-            st.session_state.b_score = 2.5
-            st.session_state.pie_cost = 0.0
-            st.session_state.notes_txt = ""
-            st.session_state.buy_chk = False
-            
-            st.toast(f"Score locked! Overall: {overall:.1f} {get_emoji(overall)}", icon="🥧")
-            st.rerun()
-
-# --- TAB 2: LEADERBOARD ---
-with tab2:
-    df = load_data()
-    
-    if df.empty:
-        st.info("No pies rated yet. Get the kettle on!")
-    else:
-        pie_stats = df.groupby("Pie_Name").agg(
-            Avg_Score=('Overall_Score', 'mean'),
-            Review_Count=('Reviewer', 'count'),
-            Max_Score=('Overall_Score', 'max'),
-            Min_Score=('Overall_Score', 'min')
-        ).reset_index()
-        
-        pie_stats = pie_stats.sort_values(by="Avg_Score", ascending=False).reset_index(drop=True)
-        
-        for index, row in pie_stats.iterrows():
-            pie = row['Pie_Name']
-            avg = row['Avg_Score']
-            count = row['Review_Count']
-            
-            # Volatility flag
-            is_volatile = count > 1 and (row['Max_Score'] - row['Min_Score']) >= 1.5
-            medal = "🥇" if index == 0 else "🥈" if index == 1 else "🥉" if index == 2 else "🥧"
-            feud_flag = " ⚠️ **FAMILY FEUD**" if is_volatile else ""
-            
-            with st.expander(f"{medal} {pie} - {avg:.1f} {get_emoji(avg)}{feud_flag} ({count} reviews)"):
-                pie_reviews = df[df['Pie_Name'] == pie]
-                
-                for _, rev in pie_reviews.iterrows():
-                    st.markdown(f"**{rev['Reviewer']}**")
-                    if pd.notna(rev['Cost']) and rev['Cost'] > 0:
-                        st.caption(f"Cost logged: £{rev['Cost']:.2f}")
-                        
-                    st.caption("✅ Buy Again" if rev['Buy_Again'] else "❌ Do Not Buy")
-                    
-                    if pd.notna(rev['Notes']) and rev['Notes'].strip():
-                        st.markdown(f"*{rev['Notes']}*")
-                    
-                    c1, c2, c3, c4, c5 = st.columns(5)
-                    c1.metric("Price", f"{rev['Price_Score']:.1f}")
-                    c2.metric("Fill", f"{rev['Filling_Score']:.1f}")
-                    c3.metric("Crust", f"{rev['Crust_Score']:.1f}")
-                    c4.metric("Booze", f"{rev['Booze_Score']:.1f}")
-                    c5.metric("Avg", f"{rev['Overall_Score']:.1f}")
-                    st.divider()
+                "Filling_Score": st.session_state
