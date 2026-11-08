@@ -5,7 +5,7 @@ from streamlit_gsheets import GSheetsConnection
 # --- PAGE SETUP ---
 st.set_page_config(page_title="The Shackleton Family Mince Pie Rater", page_icon="🥧", layout="centered")
 
-# --- CUSTOM CSS FOR MOBILE & UI POLISH ---
+# --- CUSTOM CSS FOR MOBILE & ZERO-TOP-PADDING ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -15,6 +15,12 @@ st.markdown("""
     .stApp {
         background-color: #0b1c16;
         color: #f0f0f0;
+    }
+    
+    /* Remove Streamlit's default massive top padding so content sits high up */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 5rem !important;
     }
     
     h1, h2, h3 {
@@ -107,8 +113,8 @@ def get_avatar(name):
     else: return "👤"
 
 # --- APP LAYOUT ---
-st.markdown("<h1 style='text-align: center; color: #d4af37;'>🎄 The Family Mince Pie Rater 🥧</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #8fa89b; margin-bottom: 25px;'>Settle the family Christmas debates once and for all.</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #d4af37; font-size: 1.8rem;'>🎄 The Shackleton Family Mince Pie Rater 🥧</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #8fa89b; margin-bottom: 20px; font-size: 0.9rem;'>Settle the family Christmas debates once and for all.</p>", unsafe_allow_html=True)
 
 tab1, tab2 = st.tabs(["📝 Rate a Pie", "🏆 Leaderboard"])
 
@@ -204,7 +210,7 @@ with tab2:
     st.markdown("### 🏆 Official Family Standings")
     
     if df.empty:
-        st.info("No pies rated yet. Get eating!")
+        st.info("No pies rated yet. Get the kettle on and log the first box!")
     else:
         reviewer_stats = df.groupby("Reviewer")["Overall_Score"].mean().reset_index()
         if not reviewer_stats.empty:
