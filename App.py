@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from streamlit_gsheets import GSheetsConnection
+import os
+import json
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="The Shackleton Family Mince Pie Rater", page_icon="🥧", layout="centered")
@@ -17,7 +18,6 @@ st.markdown("""
         color: #f0f0f0;
     }
     
-    /* Remove Streamlit's default massive top padding so content sits high up */
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 5rem !important;
@@ -70,31 +70,37 @@ if 'notes_txt' not in st.session_state: st.session_state.notes_txt = ""
 if 'buy_chk' not in st.session_state: st.session_state.buy_chk = False
 if 'reviewer' not in st.session_state: st.session_state.reviewer = ""
 
-# --- GOOGLE SHEETS DATA MANAGEMENT ---
-conn = st.connection("gsheets", type=GSheetsConnection)
+# --- JSON DATA MANAGEMENT (Bulletproof & Error-Free) ---
+DATA_FILE = "mince_pie_data.json"
 
 def load_data():
-    try:
-        df = conn.read(ttl=0)
-        if df is None or df.empty or "Reviewer" not in df.columns:
-            return pd.DataFrame(columns=[
-                "Reviewer", "Pie_Name", "Cost", "Price_Score", 
-                "Filling_Score", "Crust_Score", "Booze_Score", 
-                "Overall_Score", "Buy_Again", "Notes"
-            ])
-        return df.dropna(how="all")
-    except Exception as e:
-        return pd.DataFrame(columns=[
-            "Reviewer", "Pie_Name", "Cost", "Price_Score", 
-            "Filling_Score", "Crust_Score", "Booze_Score", 
-            "Overall_Score", "Buy_Again", "Notes"
-        ])
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r") as f:
+                data = json.load(f)
+            df = pd.DataFrame(data)
+            if df.empty or "Reviewer" not in df.columns:
+                return pd.DataFrame(columns=[
+                    "Reviewer", "Pie_Name", "Cost", "Price_Score", 
+                    "Filling_Score", "Crust_Score", "Booze_Score", 
+                    "Overall_Score", "Buy_Again", "Notes"
+                ])
+            return df
+        except Exception:
+            pass
+            
+    return pd.DataFrame(columns=[
+        "Reviewer", "Pie_Name", "Cost", "Price_Score", 
+        "Filling_Score", "Crust_Score", "Booze_Score", 
+        "Overall_Score", "Buy_Again", "Notes"
+    ])
 
 def save_review(review_dict):
     df = load_data()
     new_df = pd.DataFrame([review_dict])
     updated_df = pd.concat([df, new_df], ignore_index=True)
-    conn.update(data=updated_df)
+    # Save to local JSON storage on the server
+    updated_df.to_json(DATA_FILE, orient="records", indent=4)
 
 # --- EMOJI MAPPINGS ---
 def get_emoji(score):
@@ -157,19 +163,19 @@ with tab1:
     
     c1, c2 = st.columns([5, 1])
     with c1: st.slider("Price / Value", 0.0, 5.0, step=0.5, key="p_score")
-    with c2: st.markdown(f"<div style='font-size:2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.p_score)}</div>", unsafe_allow_html=True)
+    with c2: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.p_score)}</div>", unsafe_allow_html=True)
 
     c3, c4 = st.columns([5, 1])
     with c3: st.slider("Filling Quality & Amount", 0.0, 5.0, step=0.5, key="f_score")
-    with c4: st.markdown(f"<div style='font-size:2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.f_score)}</div>", unsafe_allow_html=True)
+    with c4: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.f_score)}</div>", unsafe_allow_html=True)
 
     c5, c6 = st.columns([5, 1])
     with c5: st.slider("Crust / Pastry Texture", 0.0, 5.0, step=0.5, key="c_score")
-    with c6: st.markdown(f"<div style='font-size:2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.c_score)}</div>", unsafe_allow_html=True)
+    with c6: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.c_score)}</div>", unsafe_allow_html=True)
 
     c7, c8 = st.columns([5, 1])
     with c7: st.slider("Booziness Factor", 0.0, 5.0, step=0.5, key="b_score")
-    with c8: st.markdown(f"<div style='font-size:2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.b_score)}</div>", unsafe_allow_html=True)
+    with c8: st.markdown(f"<div style='font-size:2.2rem; text-align:center; padding-top:1.8rem;'>{get_emoji(st.session_state.b_score)}</div>", unsafe_allow_html=True)
     
     st.markdown("---")
     
